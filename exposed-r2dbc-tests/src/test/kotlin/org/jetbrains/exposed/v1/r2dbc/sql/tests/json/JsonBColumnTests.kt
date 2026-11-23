@@ -311,6 +311,21 @@ class JsonBColumnTests : R2dbcDatabaseTestsBase() {
     }
 
     @Test
+    fun testJsonBLiteralWithSingleQuote() {
+        val tester = object : IntIdTable("jsonb_quote_literal") {
+            val names = jsonb<List<String>>("names", Json.Default)
+        }
+
+        withTables(excludeSettings = binaryJsonNotSupportedDB + TestDB.ALL_H2_V2, tester) {
+            tester.insert { it[names] = listOf("Kotlin") }
+            val apostropheId = tester.insertAndGetId { it[names] = listOf("They're", "O'Connor") }
+
+            val containsApostrophe = tester.names.contains(tester.names.asLiteral(listOf("They're")))
+            assertEquals(apostropheId, tester.select(tester.id).where(containsApostrophe).single()[tester.id])
+        }
+    }
+
+    @Test
     fun testJsonBWithDefaults() {
         val defaultUser = User("UNKNOWN", "UNASSIGNED")
         val defaultTester = object : Table("default_tester") {

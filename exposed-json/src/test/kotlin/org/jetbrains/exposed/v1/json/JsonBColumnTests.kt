@@ -353,6 +353,21 @@ class JsonBColumnTests : DatabaseTestsBase() {
     }
 
     @Test
+    fun testJsonBLiteralWithSingleQuote() {
+        val tester = object : IntIdTable("jsonb_quote_literal") {
+            val names = jsonb<List<String>>("names", Json.Default)
+        }
+
+        withTables(excludeSettings = jsonbContainsNotSupported, tester) {
+            tester.insert { it[names] = listOf("Kotlin") }
+            val apostropheId = tester.insertAndGetId { it[names] = listOf("They're", "O'Connor") }
+
+            val containsApostrophe = tester.names.contains(tester.names.asLiteral(listOf("They're")))
+            assertEquals(apostropheId, tester.select(tester.id).where(containsApostrophe).single()[tester.id])
+        }
+    }
+
+    @Test
     fun testJsonBWithDefaults() {
         val defaultUser = User("UNKNOWN", "UNASSIGNED")
         val defaultTester = object : Table("default_tester") {

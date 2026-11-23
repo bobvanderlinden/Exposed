@@ -59,9 +59,12 @@ open class JsonColumnType<T : Any>(
     }
 
     override fun nonNullValueToString(value: T): String {
+        // Unlike StringColumnType, line breaks are left as they are: in formatted JSON they are whitespace between
+        // tokens, where an escape sequence such as \n would make the document invalid.
+        val escaped = notNullValueToDB(value).toString().replace("'", "''")
         return when (currentDialect) {
-            is H2Dialect -> "JSON '${notNullValueToDB(value)}'"
-            else -> "'${notNullValueToDB(value)}'"
+            is H2Dialect -> "JSON '$escaped'"
+            else -> "'$escaped'"
         }
     }
 
