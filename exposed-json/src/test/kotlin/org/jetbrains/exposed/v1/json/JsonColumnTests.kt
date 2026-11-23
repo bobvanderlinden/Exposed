@@ -327,6 +327,21 @@ class JsonColumnTests : DatabaseTestsBase() {
     }
 
     @Test
+    fun testJsonLiteralWithSingleQuote() {
+        val tester = object : IntIdTable("json_quote_literal") {
+            val names = json<List<String>>("names", Json.Default)
+        }
+
+        withTables(excludeSettings = jsonContainsNotSupported, tester) {
+            tester.insert { it[names] = listOf("Kotlin") }
+            val apostropheId = tester.insertAndGetId { it[names] = listOf("They're", "O'Connor") }
+
+            val containsApostrophe = tester.names.contains(tester.names.asLiteral(listOf("They're")))
+            assertEquals(apostropheId, tester.select(tester.id).where(containsApostrophe).single()[tester.id])
+        }
+    }
+
+    @Test
     fun testJsonWithDefaults() {
         val defaultUser = User("UNKNOWN", "UNASSIGNED")
         val defaultTester = object : Table("default_tester") {
@@ -487,6 +502,21 @@ class JsonColumnTests : DatabaseTestsBase() {
 
             val value = testerDatabaseGenerated.selectAll().single()[tester.value]
             assertEquals(defaultUser, value)
+        }
+    }
+
+    @Test
+    fun testJsonDefaultWithSingleQuote() {
+        val defaultUser = User("O'Connor", "team")
+        val tester = object : IntIdTable("json_quote_default") {
+            val value = json<User>("value", Json.Default).default(defaultUser)
+        }
+
+        // MySQL versions prior to 8.0.13 do not accept default values on JSON columns
+        withTables(excludeSettings = listOf(TestDB.MYSQL_V5), tester) {
+            tester.insert { }
+
+            assertEquals(defaultUser, tester.selectAll().single()[tester.value])
         }
     }
 
